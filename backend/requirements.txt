@@ -6,3 +6,11 @@ sqlalchemy
 psycopg[binary]
 alembic
 redis
+pypdf
+python-docx
+pgvector
+sentence-transformers
+python-multipart
+openainumpy
+pandas
+scikit-learn
