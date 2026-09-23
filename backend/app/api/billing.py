@@ -17,7 +17,10 @@ from app.schemas.payment import (
     PaymentResponse,
     ReceiptResponse,
 )
-
+from app.events.service import (
+    EventTypes,
+    emit_business_event,
+)
 router = APIRouter(
     prefix="/billing",
     tags=["Billing"],
@@ -113,6 +116,25 @@ def create_invoice_from_sales_order(
 
     db.commit()
     db.refresh(invoice)
+
+    emit_business_event(
+        event_type=EventTypes.INVOICE_CREATED,
+        entity_type="INVOICE",
+        entity_id=invoice.id,
+        company_id=sales_order.company_id,
+        payload={
+            "invoice_number": invoice.invoice_number,
+            "sales_order_id": invoice.sales_order_id,
+            "currency": invoice.currency,
+            "total_amount": float(
+                invoice.total_amount
+            ),
+            "paid_amount": float(
+                invoice.paid_amount
+            ),
+            "status": invoice.status,
+        },
+    )
 
     return invoice
 
@@ -236,6 +258,22 @@ def create_payment(
     db.commit()
     db.refresh(payment)
 
+    emit_business_event(
+        event_type=EventTypes.PAYMENT_CREATED,
+        entity_type="PAYMENT",
+        entity_id=payment.id,
+        company_id=None,
+        payload={
+            "payment_number": payment.payment_number,
+            "invoice_id": invoice.id,
+            "amount": float(payment.amount),
+            "currency": payment.currency,
+            "payment_method": payment.payment_method,
+            "status": payment.status,
+            "invoice_status": invoice.status,
+        },
+    )
+
     return payment
 
 
@@ -287,5 +325,18 @@ def create_receipt(
 
     db.commit()
     db.refresh(receipt)
+
+    emit_business_event(
+        event_type=EventTypes.RECEIPT_CREATED,
+        entity_type="RECEIPT",
+        entity_id=receipt.id,
+        company_id=None,
+        payload={
+            "receipt_number": receipt.receipt_number,
+            "payment_id": receipt.payment_id,
+            "amount": float(receipt.amount),
+            "currency": receipt.currency,
+        },
+    )
 
     return receipt

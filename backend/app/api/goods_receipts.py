@@ -16,7 +16,10 @@ from app.schemas.goods_receipt import (
     GoodsReceiptCreate,
     GoodsReceiptResponse,
 )
-
+from app.events.service import (
+    EventTypes,
+    emit_business_event,
+)
 router = APIRouter(
     prefix="/goods-receipts",
     tags=["Goods Receipts"],
@@ -321,5 +324,24 @@ def receive_goods(
 
     db.commit()
     db.refresh(receipt)
+
+    total_received = sum(
+        item.received_quantity
+        for item in receipt_items
+    )
+
+    emit_business_event(
+        event_type=EventTypes.GOODS_RECEIVED,
+        entity_type="GOODS_RECEIPT",
+        entity_id=receipt.id,
+        company_id=purchase_order.company_id,
+        payload={
+            "receipt_number": receipt.receipt_number,
+            "purchase_order_id": receipt.purchase_order_id,
+            "warehouse_id": receipt.warehouse_id,
+            "total_received": total_received,
+            "status": receipt.status,
+        },
+    )
 
     return receipt

@@ -16,7 +16,10 @@ from app.schemas.sales_order import (
     SalesOrderCreate,
     SalesOrderResponse,
 )
-
+from app.events.service import (
+    EventTypes,
+    emit_business_event,
+)
 
 # =========================================================
 # ROUTER
@@ -419,16 +422,27 @@ def confirm_sales_order(
 
     db.refresh(order)
 
-    # -----------------------------------------------------
-    # 8. Load items for response
-    # -----------------------------------------------------
-
     order.items = (
         db.query(SalesOrderItem)
         .filter(
             SalesOrderItem.order_id == order.id
         )
         .all()
+    )
+
+    emit_business_event(
+        event_type=EventTypes.SALES_ORDER_CONFIRMED,
+        entity_type="SALES_ORDER",
+        entity_id=order.id,
+        company_id=order.company_id,
+        payload={
+            "order_number": order.order_number,
+            "customer_id": order.customer_id,
+            "currency": order.currency,
+            "total_amount": float(order.total_amount),
+            "status": order.status,
+            "item_count": len(order.items),
+        },
     )
 
     return order

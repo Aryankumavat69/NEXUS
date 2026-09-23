@@ -19,7 +19,10 @@ from app.schemas.purchase_order import (
     PurchaseOrderCreate,
     PurchaseOrderResponse,
 )
-
+from app.events.service import (
+    EventTypes,
+    emit_business_event,
+)
 
 # =========================================================
 # ROUTER
@@ -361,6 +364,25 @@ def confirm_purchase_order(
             == purchase_order.id
         )
         .all()
+    )
+
+    emit_business_event(
+        event_type=EventTypes.PURCHASE_ORDER_CONFIRMED,
+        entity_type="PURCHASE_ORDER",
+        entity_id=purchase_order.id,
+        company_id=purchase_order.company_id,
+        payload={
+            "po_number": purchase_order.po_number,
+            "supplier_id": purchase_order.supplier_id,
+            "currency": purchase_order.currency,
+            "total_amount": float(
+                purchase_order.total_amount
+            ),
+            "status": purchase_order.status,
+            "item_count": len(
+                purchase_order.items
+            ),
+        },
     )
 
     return purchase_order
