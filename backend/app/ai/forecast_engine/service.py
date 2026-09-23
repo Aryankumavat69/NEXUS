@@ -76,8 +76,9 @@ def generate_product_forecast(
     )
 
     forecast, method = forecast_demand(
-        demand_data=history,
-        forecast_days=forecast_days,
+    demand_data=history,
+    forecast_days=forecast_days,
+    historical_days=historical_days,
     )
 
     return {
